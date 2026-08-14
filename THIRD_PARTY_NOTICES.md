@@ -41,6 +41,6 @@ SOFTWARE.
 | Package | License | Used for |
 | --- | --- | --- |
 | [Electron](https://www.electronjs.org/) | MIT | Desktop runtime (Chromium + Node.js) |
-| [electron-builder](https://www.electronjs.org/docs/latest/tutorial/electron-tutorial-2) | MIT | Packaging installers for Windows / macOS / Linux |
+| [electron-builder](https://www.electron.build/) | MIT | Packaging installers for Windows / macOS / Linux |
 
 See `package.json` for exact versions.

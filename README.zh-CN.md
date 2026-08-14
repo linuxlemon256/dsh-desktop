@@ -32,7 +32,7 @@ DeepSeek Harness 以 CLI 形式分发，界面要靠 `dsh web` 在浏览器里�
 
 ## 环境要求
 
-- [Node.js](https://nodejs.org/) >= 20
+- [Node.js](https://nodejs.org/) >= 22.12
 - 全局安装 `dsh` CLI：
 
 ```sh
@@ -52,23 +52,25 @@ npm start
 
 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- |
-| `DSH_PORT` | `3080` | `dsh web` 服务的 TCP 端口 |
+| `DSH_PORT` | `3080` | `dsh web` 服务的 TCP 端口（设置后以 `dsh web --port` 传递） |
 
 ## 构建安装包
 
 ```sh
 npm run build:win     # Windows：NSIS 安装包 + 便携版 .exe
-npm run build:mac     # macOS：DMG
-npm run build:linux   # Linux：AppImage
+npm run build:mac     # macOS：DMG（需要 macOS 机器）
+npm run build:linux   # Linux：AppImage（需要 Linux 机器）
 ```
 
-产物输出到 `dist/` 目录。
+产物输出到 `dist/` 目录。发布官方多平台产物时，推送 `v*` 标签即可触发
+[release 工作流](.github/workflows/release.yml)，GitHub Actions 会在三个平台
+分别构建并把文件（含 `SHA256SUMS.txt`）自动挂到 Release 上。
 
 ## 工作原理
 
 1. 启动时探测 `http://127.0.0.1:3080` 是否有 `dsh web` 服务在运行。
-2. 1.5 秒内无响应，就从 `PATH` 中解析 `dsh`，以子进程方式执行 `dsh web`。
-3. 轮询端口直到服务就绪（60 秒超时），然后在 Electron 窗口中加载界面。
+2. 1.5 秒内无响应，就从 `PATH` 中解析 `dsh`，以子进程方式执行 `dsh web`（设置了 `DSH_PORT` 时附加 `--port` 参数）。
+3. 轮询端口直到服务就绪（60 秒超时），然后在 Electron 窗口中加载界面。若服务在启动期间崩溃，只会弹出一个明确的错误框，不会挂着白屏窗口。
 4. 关闭窗口时终止子进程树——**仅当服务是本应用拉起的**。外部已运行的服务保持不动。
 
 完整的架构说明和与 DeepSeek Harness 的派生关系见
@@ -88,10 +90,8 @@ dsh-desktop/
 
 ## 路线图
 
-- [ ] 应用图标与安装包品牌化
 - [ ] 窗口打开期间 `dsh web` 崩溃时自动重启
 - [ ] 设置界面（端口、开机自启）
-- [ ] 三平台 CI 构建流水线（GitHub Actions）
 
 ## 参与贡献
 

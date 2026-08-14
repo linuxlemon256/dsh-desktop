@@ -1,16 +1,36 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const { spawn, execFile } = require('child_process');
+const fs = require('fs');
 const http = require('http');
+const path = require('path');
 
 const HOST = '127.0.0.1';
-const PORT = Number(process.env.DSH_PORT) || 3080;
+const RAW_PORT = Number(process.env.DSH_PORT);
+const PORT = Number.isInteger(RAW_PORT) && RAW_PORT > 0 && RAW_PORT < 65536 ? RAW_PORT : 3080;
 const PROBE_INTERVAL_MS = 500;
+const REQUEST_TIMEOUT_MS = 3000;
 const SHORT_TIMEOUT_MS = 1500;
 const STARTUP_TIMEOUT_MS = 60000;
 
 let dshProc = null;
 let mainWindow = null;
 let shuttingDown = false;
+let startupAbort = null;
+let startupCrashCode = null;
+
+if (process.env.DSH_PORT !== undefined && RAW_PORT !== PORT) {
+  console.warn(
+    `[dsh-desktop] ignoring invalid DSH_PORT="${process.env.DSH_PORT}", using ${PORT}`
+  );
+}
+
+function windowIcon() {
+  const candidate =
+    process.platform === 'win32'
+      ? path.join(__dirname, 'build', 'icon.ico')
+      : path.join(__dirname, 'build', 'icon.png');
+  return fs.existsSync(candidate) ? candidate : undefined;
+}
 
 function log(...args) {
   console.log('[dsh-desktop]', ...args);
@@ -24,6 +44,14 @@ function serverUrl() {
   return `http://${HOST}:${PORT}`;
 }
 
+function dshArgs() {
+  return process.env.DSH_PORT !== undefined ? ['web', '--port', String(PORT)] : ['web'];
+}
+
+function dshCommandLine() {
+  return `dsh ${dshArgs().join(' ')}`;
+}
+
 function isServerUp(timeoutMs) {
   return new Promise((resolve) => {
     const start = Date.now();
@@ -32,8 +60,35 @@ function isServerUp(timeoutMs) {
         res.destroy();
         resolve(true);
       });
+      req.setTimeout(REQUEST_TIMEOUT_MS, () => req.destroy());
       req.on('error', () => {
         if (Date.now() - start > timeoutMs) resolve(false);
+        else setTimeout(probe, PROBE_INTERVAL_MS);
+      });
+    };
+    probe();
+  });
+}
+
+function waitForStartup(timeoutMs) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (up) => {
+      if (!settled) {
+        settled = true;
+        resolve(up);
+      }
+    };
+    startupAbort = () => finish(false);
+    const start = Date.now();
+    const probe = () => {
+      const req = http.get(serverUrl(), (res) => {
+        res.destroy();
+        finish(true);
+      });
+      req.setTimeout(REQUEST_TIMEOUT_MS, () => req.destroy());
+      req.on('error', () => {
+        if (Date.now() - start > timeoutMs) finish(false);
         else setTimeout(probe, PROBE_INTERVAL_MS);
       });
     };
@@ -64,12 +119,14 @@ function startDsh() {
         resolve(false);
         return;
       }
-      log(`starting \`dsh web\` (${dshPath})`);
+      log(`starting \`${dshCommandLine()}\` (${dshPath})`);
       if (process.platform === 'win32') {
         const comspec = process.env.ComSpec || 'cmd.exe';
-        dshProc = execFile(comspec, ['/d', '/s', '/c', 'dsh web'], { windowsHide: true });
+        dshProc = execFile(comspec, ['/d', '/s', '/c', dshCommandLine()], {
+          windowsHide: true,
+        });
       } else {
-        dshProc = spawn('dsh', ['web']);
+        dshProc = spawn('dsh', dshArgs(), { detached: true });
       }
       dshProc.stdout.on('data', (chunk) => log(`[dsh] ${chunk}`.trimEnd()));
       dshProc.stderr.on('data', (chunk) => errorLog(`[dsh] ${chunk}`.trimEnd()));
@@ -77,6 +134,11 @@ function startDsh() {
         dshProc = null;
         if (shuttingDown) return;
         errorLog(`\`dsh web\` exited unexpectedly (code=${code}, signal=${signal})`);
+        if (startupAbort) {
+          startupCrashCode = code;
+          startupAbort();
+          return;
+        }
         dialog.showErrorBox(
           'DeepSeek Harness stopped',
           `The \`dsh web\` server exited unexpectedly (code ${code}).`
@@ -94,16 +156,19 @@ async function ensureDsh() {
     return true;
   }
   if (!(await startDsh())) return false;
-  if (await isServerUp(STARTUP_TIMEOUT_MS)) {
+  const up = await waitForStartup(STARTUP_TIMEOUT_MS);
+  startupAbort = null;
+  if (up) {
     log(`\`dsh web\` is ready at ${serverUrl()}`);
     return true;
   }
-  errorLog(`timed out waiting for \`dsh web\` at ${serverUrl()}`);
+  errorLog(`\`dsh web\` failed to start at ${serverUrl()}`);
   killDsh();
-  dialog.showErrorBox(
-    'DeepSeek Harness failed to start',
-    `Timed out waiting for the \`dsh web\` server at ${serverUrl()}.`
-  );
+  const detail =
+    startupCrashCode !== null
+      ? `The \`dsh web\` server exited during startup (code ${startupCrashCode}).`
+      : `Timed out waiting for the \`dsh web\` server at ${serverUrl()}.`;
+  dialog.showErrorBox('DeepSeek Harness failed to start', detail);
   return false;
 }
 
@@ -114,7 +179,11 @@ function killDsh() {
   if (process.platform === 'win32') {
     execFile('taskkill', ['/pid', String(proc.pid), '/T', '/F'], () => {});
   } else {
-    proc.kill('SIGTERM');
+    try {
+      process.kill(-proc.pid, 'SIGTERM');
+    } catch {
+      proc.kill('SIGTERM');
+    }
   }
 }
 
@@ -139,17 +208,28 @@ if (!gotLock) {
       width: 1280,
       height: 850,
       title: 'DeepSeek Harness',
+      icon: windowIcon(),
+      show: false,
       autoHideMenuBar: true,
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
       },
     });
+    mainWindow.once('ready-to-show', () => {
+      mainWindow.show();
+    });
     mainWindow.on('closed', () => {
       mainWindow = null;
     });
-    mainWindow.webContents.on('did-fail-load', (_e, code, desc) => {
+    mainWindow.webContents.on('did-fail-load', (_e, code, desc, _url, isMainFrame) => {
+      if (!isMainFrame) return;
       errorLog(`failed to load ${serverUrl()}: ${desc} (${code})`);
+      dialog.showErrorBox(
+        'Connection failed',
+        `Could not load ${serverUrl()}.\n\n${desc} (${code})`
+      );
+      app.quit();
     });
     mainWindow.loadURL(serverUrl());
   });

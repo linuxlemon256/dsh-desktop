@@ -10,7 +10,7 @@
 
 Please **do not** open a public issue for security vulnerabilities.
 
-Report them privately by email to the maintainer (address TBD) or via a
+Report them privately by email to the maintainer (<297761464@qq.com>) or via a
 [GitHub Security Advisory](https://github.com/linuxlemon256/dsh-desktop/security/advisories)
 (private vulnerability report).
 

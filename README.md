@@ -37,7 +37,7 @@ the missing piece.
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/) >= 20
+- [Node.js](https://nodejs.org/) >= 22.12
 - The `dsh` CLI installed globally:
 
 ```sh
@@ -57,23 +57,26 @@ npm start
 
 | Environment variable | Default | Description |
 | --- | --- | --- |
-| `DSH_PORT` | `3080` | TCP port of the `dsh web` server |
+| `DSH_PORT` | `3080` | TCP port of the `dsh web` server (passed to `dsh web --port` when set) |
 
 ## Building installers
 
 ```sh
 npm run build:win     # NSIS installer + portable .exe (Windows)
-npm run build:mac     # DMG (macOS)
-npm run build:linux   # AppImage (Linux)
+npm run build:mac     # DMG (macOS — requires a macOS machine)
+npm run build:linux   # AppImage (Linux — requires a Linux machine)
 ```
 
-Output goes to `dist/`.
+Output goes to `dist/`. For official multi-platform release assets, push a
+`v*` tag and the [release workflow](.github/workflows/release.yml) builds all
+three platforms on GitHub Actions and attaches the files (plus `SHA256SUMS.txt`)
+to the release.
 
 ## How it works
 
 1. On startup, the app probes `http://127.0.0.1:3080` for a running `dsh web` server.
-2. If nothing responds within 1.5s, it resolves `dsh` from `PATH` and spawns `dsh web` as a child process.
-3. It polls the port until the server is healthy (60s timeout) and loads the UI in an Electron window.
+2. If nothing responds within 1.5s, it resolves `dsh` from `PATH` and spawns `dsh web` as a child process (`--port <DSH_PORT>` when configured).
+3. It polls the port until the server is healthy (60s timeout) and loads the UI in an Electron window. If the server crashes during startup, a single error dialog is shown instead of a hung window.
 4. When the window is closed, the child process tree is terminated — **only if** this app started it. An externally running server is left untouched.
 
 See [docs/deepseek-harness-integration.md](docs/deepseek-harness-integration.md)
@@ -93,10 +96,8 @@ dsh-desktop/
 
 ## Roadmap
 
-- [ ] App icon and installer branding
 - [ ] Auto-restart `dsh web` when it crashes while the window is open
 - [ ] Settings UI (port, auto-start)
-- [ ] CI build pipeline (GitHub Actions) for all three platforms
 
 ## Contributing
 

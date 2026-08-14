@@ -28,18 +28,28 @@ Upstream license obligations are met — see [THIRD_PARTY_NOTICES.md](../THIRD_P
 ```
 app starts
     │
-    ├─ probe http://127.0.0.1:3080 (1.5s)
+    ├─ probe http://127.0.0.1:<port> (1.5s)
     │     ├─ responds ──► server already running → attach, do NOT kill on exit
     │     └─ no response
     │            ├─ resolve `dsh` from PATH (where / which)
     │            │     └─ not found → error dialog, quit
-    │            ├─ spawn `dsh web` (cmd.exe /c on Windows, direct on POSIX)
+    │            ├─ spawn `dsh web` (+ `--port <port>` when DSH_PORT is set)
+    │            │     (cmd.exe /c on Windows, detached on POSIX)
     │            ├─ poll port until healthy (60s timeout)
+    │            │     ├─ dsh crashed mid-startup → abort wait, single error dialog
     │            │     └─ timeout → kill child tree, error dialog, quit
     │            └─ ready
     │
-    └─ create BrowserWindow → load http://127.0.0.1:3080
+    └─ create BrowserWindow (hidden) → load → show on `ready-to-show`
 ```
+
+## 2.1 Startup-crash handling
+
+If `dsh web` exits while the startup probe is still polling, the `exit` handler
+cancels the wait (`startupAbort`) and records the exit code. `ensureDsh` then
+shows exactly one dialog (mentioning the crash code) instead of a second
+"timed out" dialog appearing later. After startup completes, an unexpected
+`dsh web` exit shows the "stopped" dialog and quits the app.
 
 ## 3. Design decisions
 
@@ -63,7 +73,7 @@ approaches exist:
   — the documented pattern; no warning, no flash of a terminal window.
 
 This project uses the second approach on Windows and a plain
-`spawn('dsh', ['web'])` on POSIX systems.
+`spawn('dsh', ['web'], { detached: true })` on POSIX systems.
 
 ### 3.3 Process-tree termination
 
@@ -71,8 +81,10 @@ This project uses the second approach on Windows and a plain
 immediate PID would leak them:
 
 - Windows — `taskkill /pid <pid> /T /F` kills the whole tree.
-- POSIX — `proc.kill('SIGTERM')` sends a signal the CLI can handle; `dshProc`
-  is nulled immediately so double-kills are impossible.
+- POSIX — the child is spawned in its own process group (`detached: true`),
+  so `process.kill(-pid, 'SIGTERM')` signals every process in the group;
+  a fallback `proc.kill('SIGTERM')` covers the case where the group leader is
+  already gone. `dshProc` is nulled immediately so double-kills are impossible.
 
 ### 3.4 Ownership of the server
 
@@ -90,16 +102,21 @@ second launch simply focuses the existing window.
 
 ### 3.6 Configurable port
 
-The port is read from `DSH_PORT` (default `3080`) at startup, so the wrapper
-can attach to a server running on a custom port.
+The port is read from `DSH_PORT` (default `3080`) at startup and validated
+(positive integer below 65536; invalid values fall back with a warning). When
+`DSH_PORT` is explicitly set, the spawned command becomes `dsh web --port <port>`
+so the server and the probe agree. When it is not set, `dsh web` runs exactly as
+a user would run it manually.
 
 ## 4. Where to extend
 
 | Concern | File |
 | --- | --- |
 | Electron app entry / boot sequence | `main.js` |
-| Health check & spawn logic | `main.js` (`isServerUp`, `startDsh`, `ensureDsh`) |
+| Health check & spawn logic | `main.js` (`isServerUp`, `waitForStartup`, `startDsh`, `ensureDsh`) |
+| Startup-crash abort | `main.js` (`startupAbort`, `startupCrashCode`) |
 | Shutdown / cleanup | `main.js` (`killDsh`, `window-all-closed`, `before-quit`) |
+| Load failure handling | `main.js` (`did-fail-load`) |
 | Packaging metadata | `package.json` → `build` section |
 | Docs | `docs/`, `README.md`, `README.zh-CN.md` |
 
