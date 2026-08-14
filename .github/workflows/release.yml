@@ -37,6 +37,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install electron binary
+        run: node node_modules/electron/install.js
+
       - name: Build installer
         run: npm run ${{ matrix.script }}
 
