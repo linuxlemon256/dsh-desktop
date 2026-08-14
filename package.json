@@ -1,0 +1,76 @@
+{
+  "name": "dsh-desktop",
+  "version": "1.0.0",
+  "description": "A lightweight Electron desktop client for DeepSeek Harness (dsh): boots the `dsh web` server and opens its UI in a native window.",
+  "main": "main.js",
+  "license": "MIT",
+  "author": "linuxlemon256",
+  "homepage": "https://github.com/linuxlemon256/dsh-desktop",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/linuxlemon256/dsh-desktop.git"
+  },
+  "bugs": {
+    "url": "https://github.com/linuxlemon256/dsh-desktop/issues"
+  },
+  "keywords": [
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "electron",
+    "desktop",
+    "harness",
+    "ai"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "build": "electron-builder --win",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "build": {
+    "appId": "com.linuxlemon256.dsh-desktop",
+    "productName": "DeepSeek Harness Desktop",
+    "files": [
+      "main.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Development"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.0.12"
+  }
+}
