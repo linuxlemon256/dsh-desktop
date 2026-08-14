@@ -5,7 +5,10 @@
   "description": "A lightweight Electron desktop client for DeepSeek Harness (dsh): boots the `dsh web` server and opens its UI in a native window.",
   "main": "main.js",
   "license": "MIT",
-  "author": "linuxlemon256",
+  "author": {
+    "name": "linuxlemon256",
+    "email": "297761464@qq.com"
+  },
   "homepage": "https://github.com/linuxlemon256/dsh-desktop",
   "repository": {
     "type": "git",
