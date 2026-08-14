@@ -31,11 +31,11 @@
   },
   "scripts": {
     "start": "electron .",
-    "pack": "electron-builder --dir",
-    "build": "electron-builder --win",
-    "build:win": "electron-builder --win",
-    "build:mac": "electron-builder --mac",
-    "build:linux": "electron-builder --linux"
+    "pack": "electron-builder --dir --publish never",
+    "build": "electron-builder --win --publish never",
+    "build:win": "electron-builder --win --publish never",
+    "build:mac": "electron-builder --mac --publish never",
+    "build:linux": "electron-builder --linux --publish never"
   },
   "build": {
     "appId": "com.linuxlemon256.dsh-desktop",
