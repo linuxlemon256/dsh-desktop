@@ -53,12 +53,16 @@ npm start
 | 环境变量 | 默认值 | 说明 |
 | --- | --- | --- |
 | `DSH_PORT` | `3080` | `dsh web` 服务的 TCP 端口（设置后以 `dsh web --port` 传递） |
+| `DSH_SKIP_PLUGIN_INSTALL` | 未设置 | 设为 `1` 关闭 IDE 工作台插件的自动安装 |
 
 ## 扩展 UI（社区插件）
 
-`dsh web` profile 支持第三方插件，给 harness 界面加 IDE 级功能。两个已验证的选项：
+`dsh web` profile 支持第三方插件，给 harness 界面加 IDE 级功能。
+**应用会在首次启动时自动安装下面的 IDE 工作台插件**（当 `web` profile 里没有时）——
+拉下来启动就能用，无需手动配置。设 `DSH_SKIP_PLUGIN_INSTALL=1` 可关闭自动安装。
+首次启动因安装插件会稍慢。两个已验证的选项：
 
-### 1. IDE 工作台：`dsh-better-sidebar`（推荐）
+### 1. IDE 工作台：`dsh-better-sidebar`（推荐，自动安装）
 
 在 harness 里直接获得完整工作台，无需打开其他 IDE：
 
@@ -66,6 +70,8 @@ npm start
 - **真实终端**：xterm.js + node-pty
 - **Git 面板**：VSCode 式 diff（暂存/提交/还原）
 - 内嵌浏览器、后台任务页、可拆分分栏布局
+
+手动安装（与应用自动安装等价）：
 
 ```sh
 dsh plugin --profile web add dsh-better-sidebar

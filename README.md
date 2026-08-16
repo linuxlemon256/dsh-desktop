@@ -58,13 +58,17 @@ npm start
 | Environment variable | Default | Description |
 | --- | --- | --- |
 | `DSH_PORT` | `3080` | TCP port of the `dsh web` server (passed to `dsh web --port` when set) |
+| `DSH_SKIP_PLUGIN_INSTALL` | unset | Set to `1` to disable auto-install of the IDE workbench plugin |
 
 ## Extending the UI (community plugins)
 
 The `dsh web` profile supports third-party plugins that add IDE-like features
-to the harness UI. Two verified options:
+to the harness UI. **The app auto-installs the IDE workbench below on first
+launch** (when the `web` profile lacks it) — clone, start, done. Set
+`DSH_SKIP_PLUGIN_INSTALL=1` to disable this. The first launch takes a bit
+longer while the plugin is installed. Two verified options:
 
-### 1. IDE workbench: `dsh-better-sidebar` (recommended)
+### 1. IDE workbench: `dsh-better-sidebar` (recommended, auto-installed)
 
 A full workbench inside the harness — no separate IDE needed:
 
@@ -72,6 +76,8 @@ A full workbench inside the harness — no separate IDE needed:
 - **Real terminal** (xterm.js + node-pty)
 - **Git panel** with VSCode-style diffs (stage / commit / revert)
 - Embedded browser, background task view, split-pane layout
+
+Manual install (equivalent to what the app does):
 
 ```sh
 dsh plugin --profile web add dsh-better-sidebar

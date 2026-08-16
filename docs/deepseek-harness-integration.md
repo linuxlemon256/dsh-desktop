@@ -148,6 +148,17 @@ dsh plugin --profile web add <package>     # forwards to pnpm inside the profile
   SSH terminal, skin center. Install it with:
   `dsh plugin --profile web add @linxin666/dsh-web-ui-all`
 
+### 6.1 Automatic plugin installation
+
+`dsh-desktop` auto-installs the `dsh-better-sidebar` IDE workbench on first
+launch: when the `web` profile exists but does not list the plugin in
+`dsh.profile.bundles`, the app ensures `pnpm` is available, runs
+`dsh plugin --profile web add dsh-better-sidebar` (twice — the first pass may
+fail with `ERR_PNPM_IGNORED_BUILDS`; `pnpm approve-builds --all` then approves
+the native builds such as `node-pty`), and restarts the spawned server so the
+plugin loads. On a brand-new profile (first ever run) the flow runs after the
+initial profile bootstrap. Set `DSH_SKIP_PLUGIN_INSTALL=1` to disable it.
+
 ## 7. License
 
 This document is part of `dsh-desktop` (MIT). Upstream DeepSeek Harness code is

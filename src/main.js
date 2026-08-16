@@ -2,6 +2,7 @@ const { app, BrowserWindow, dialog } = require('electron');
 const { spawn, execFile } = require('child_process');
 const fs = require('fs');
 const http = require('http');
+const os = require('os');
 const path = require('path');
 
 const HOST = '127.0.0.1';
@@ -11,6 +12,12 @@ const PROBE_INTERVAL_MS = 500;
 const REQUEST_TIMEOUT_MS = 3000;
 const SHORT_TIMEOUT_MS = 1500;
 const STARTUP_TIMEOUT_MS = 60000;
+
+const DSH_HOME = process.env.DSH_HOME || path.join(os.homedir(), '.dsh');
+const PROFILE_DIR = path.join(DSH_HOME, 'profiles', 'web');
+const PROFILE_PKG = path.join(PROFILE_DIR, 'package.json');
+const IDE_PLUGIN = 'dsh-better-sidebar';
+const SKIP_PLUGIN_INSTALL = process.env.DSH_SKIP_PLUGIN_INSTALL === '1';
 
 let dshProc = null;
 let mainWindow = null;
@@ -155,9 +162,27 @@ async function ensureDsh() {
     log(`existing \`dsh web\` server detected at ${serverUrl()}`);
     return true;
   }
+
+  const profileExists = fs.existsSync(PROFILE_PKG);
+  let ideInstalled = false;
+  if (!SKIP_PLUGIN_INSTALL && profileExists && !checkIdePlugin().installed) {
+    ideInstalled = await installIdePlugin();
+  }
+
   if (!(await startDsh())) return false;
-  const up = await waitForStartup(STARTUP_TIMEOUT_MS);
+  let up = await waitForStartup(STARTUP_TIMEOUT_MS);
   startupAbort = null;
+
+  if (up && !SKIP_PLUGIN_INSTALL && !ideInstalled && !checkIdePlugin().installed) {
+    log('first run — installing IDE workbench, then restarting the server...');
+    if (await installIdePlugin()) {
+      killDsh();
+      if (!(await startDsh())) return false;
+      up = await waitForStartup(STARTUP_TIMEOUT_MS);
+      startupAbort = null;
+    }
+  }
+
   if (up) {
     log(`\`dsh web\` is ready at ${serverUrl()}`);
     return true;
@@ -185,6 +210,84 @@ function killDsh() {
       proc.kill('SIGTERM');
     }
   }
+}
+
+function runCommand(command, args, opts = {}) {
+  return new Promise((resolve) => {
+    const env = { ...process.env, NODE_OPTIONS: '--use-system-ca' };
+    const finish = (err, stdout, stderr) =>
+      resolve({ code: err ? (err.code !== undefined ? err.code : 1) : 0, stdout, stderr });
+    if (process.platform === 'win32') {
+      const comspec = process.env.ComSpec || 'cmd.exe';
+      execFile(
+        comspec,
+        ['/d', '/s', '/c', [command, ...args].join(' ')],
+        { windowsHide: true, cwd: opts.cwd, env },
+        finish
+      );
+    } else {
+      execFile(command, args, { cwd: opts.cwd, env }, finish);
+    }
+  });
+}
+
+function resolvePnpm() {
+  const lookup = process.platform === 'win32' ? 'where' : 'which';
+  return new Promise((resolve) => {
+    execFile(lookup, ['pnpm'], (err, stdout) => {
+      resolve(err || !stdout ? null : stdout.trim().split(/\r?\n/)[0]);
+    });
+  });
+}
+
+function checkIdePlugin() {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(PROFILE_PKG, 'utf8'));
+    const bundles = pkg?.dsh?.profile?.bundles ?? [];
+    return { installed: bundles.includes(IDE_PLUGIN) };
+  } catch {
+    return { installed: false };
+  }
+}
+
+async function ensurePnpm() {
+  if (await resolvePnpm()) return true;
+  log('pnpm not found — installing it globally (required by the dsh plugin manager)...');
+  const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const res = await runCommand(npmCmd, ['install', '-g', 'pnpm']);
+  if (res.code !== 0) {
+    errorLog(`failed to install pnpm: ${res.stderr.trim()}`);
+    return false;
+  }
+  log('pnpm installed');
+  return true;
+}
+
+async function installIdePlugin() {
+  log(`IDE plugin \`${IDE_PLUGIN}\` not found in profile — installing...`);
+  if (!(await ensurePnpm())) return false;
+
+  const addArgs = ['plugin', '--profile', 'web', 'add', IDE_PLUGIN];
+  const first = await runCommand('dsh', addArgs);
+  if (first.code !== 0) {
+    errorLog(`dsh plugin add failed on first attempt: ${(first.stderr || '').trim()}`);
+  }
+
+  const approve = await runCommand('pnpm', ['approve-builds', '--all'], { cwd: PROFILE_DIR });
+  if (approve.code !== 0) {
+    errorLog(`pnpm approve-builds failed: ${(approve.stderr || '').trim()}`);
+  }
+
+  const second = await runCommand('dsh', addArgs);
+  if (second.code !== 0) {
+    errorLog(`failed to register IDE plugin: ${(second.stderr || '').trim()}`);
+    return false;
+  }
+
+  const status = checkIdePlugin();
+  if (status.installed) log(`IDE workbench installed (${IDE_PLUGIN})`);
+  else errorLog('IDE plugin installed but not registered in profile bundles');
+  return status.installed;
 }
 
 const gotLock = app.requestSingleInstanceLock();
