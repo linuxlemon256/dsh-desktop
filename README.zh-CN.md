@@ -71,7 +71,13 @@ npm install -g pnpm
 dsh plugin --profile web add @linxin666/dsh-web-ui-all
 ```
 
-装完重启应用，打开项目会话后，聊天区右侧会出现这些面板。插件为 Apache-2.0 许可，
+> pnpm ≥ 11 默认拦截原生依赖构建（如 `ssh2`），命令可能报
+> `ERR_PNPM_IGNORED_BUILDS` 失败。此时打开
+> `~/.dsh/profiles/web/pnpm-workspace.yaml`，把 `allowBuilds` 各项设为
+> `true`，然后**重新执行一次 `dsh plugin ... add`**——必须成功退出（退出码 0）
+> 插件才会写进 `dsh.profile.bundles` 并生效。
+
+装完重启应用，打开**项目会话**（带工作目录的会话）后，聊天区右侧会出现这些面板。插件为 Apache-2.0 许可，
 详见其[仓库](https://github.com/zhu1090093659/dsh-web-ui)。
 
 ## 构建安装包

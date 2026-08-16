@@ -77,8 +77,15 @@ npm install -g pnpm
 dsh plugin --profile web add @linxin666/dsh-web-ui-all
 ```
 
-After installing, restart the app and open a project session — the panels
-appear to the right of the chat area. The plugin is Apache-2.0 licensed; see
+> On pnpm ≥ 11 the install may report `ERR_PNPM_IGNORED_BUILDS` (native deps
+> like `ssh2` are blocked by default). If the command fails, open
+> `~/.dsh/profiles/web/pnpm-workspace.yaml`, set every `allowBuilds` entry to
+> `true`, then run the `dsh plugin ... add` command again — it must succeed
+> once (exit code 0) for the plugin to be registered in `dsh.profile.bundles`.
+
+After installing, restart the app and open a **project session** (a session
+with a working directory) — the Explorer/Preview panels appear to the right of
+the chat area. The plugin is Apache-2.0 licensed; see
 its [repository](https://github.com/zhu1090093659/dsh-web-ui) for details.
 
 ## Building installers
