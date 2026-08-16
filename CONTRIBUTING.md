@@ -26,7 +26,7 @@ Open an issue using the [feature request template](.github/ISSUE_TEMPLATE/featur
 
 1. Fork the repository and create a feature branch:
    `git checkout -b feat/your-feature`
-2. Make your changes. Keep `main.js` self-contained unless the change genuinely
+2. Make your changes. Keep `src/main.js` self-contained unless the change genuinely
    requires a new module.
 3. Test locally:
 
@@ -42,7 +42,7 @@ Open an issue using the [feature request template](.github/ISSUE_TEMPLATE/featur
 
 ## Development notes
 
-- The whole app lives in `main.js` (Electron main process). Keep the boot
+- The whole app lives in `src/main.js` (Electron main process). Keep the boot
   sequence readable: probe → resolve → spawn → wait → load → cleanup.
 - Do not hardcode machine-specific paths. Resolve `dsh` from `PATH`.
 - On Windows, npm shims are `*.cmd` files — they must be launched through

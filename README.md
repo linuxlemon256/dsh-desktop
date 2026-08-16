@@ -130,7 +130,7 @@ for the full architecture and how this project is derived from DeepSeek Harness.
 dsh-desktop/
 ├── .github/               # Issue & PR templates
 ├── docs/                  # DeepSeek Harness integration docs (二次开发说明)
-├── main.js                # Electron main process (the whole app)
+├── src/main.js            # Electron main process (the whole app)
 ├── package.json
 ├── LICENSE                # MIT
 └── THIRD_PARTY_NOTICES.md # Upstream license attribution

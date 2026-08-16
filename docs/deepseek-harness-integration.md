@@ -112,11 +112,11 @@ a user would run it manually.
 
 | Concern | File |
 | --- | --- |
-| Electron app entry / boot sequence | `main.js` |
-| Health check & spawn logic | `main.js` (`isServerUp`, `waitForStartup`, `startDsh`, `ensureDsh`) |
-| Startup-crash abort | `main.js` (`startupAbort`, `startupCrashCode`) |
-| Shutdown / cleanup | `main.js` (`killDsh`, `window-all-closed`, `before-quit`) |
-| Load failure handling | `main.js` (`did-fail-load`) |
+| Electron app entry / boot sequence | `src/main.js` |
+| Health check & spawn logic | `src/main.js` (`isServerUp`, `waitForStartup`, `startDsh`, `ensureDsh`) |
+| Startup-crash abort | `src/main.js` (`startupAbort`, `startupCrashCode`) |
+| Shutdown / cleanup | `src/main.js` (`killDsh`, `window-all-closed`, `before-quit`) |
+| Load failure handling | `src/main.js` (`did-fail-load`) |
 | Packaging metadata | `package.json` → `build` section |
 | Docs | `docs/`, `README.md`, `README.zh-CN.md` |
 

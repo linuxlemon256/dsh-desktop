@@ -122,7 +122,7 @@ npm run build:linux   # Linux：AppImage（需要 Linux 机器）
 dsh-desktop/
 ├── .github/               # Issue 与 PR 模板
 ├── docs/                  # DeepSeek Harness 集成说明（二次开发文档）
-├── main.js                # Electron 主进程（整个应用就这一个文件）
+├── src/main.js            # Electron 主进程（整个应用就这一个文件）
 ├── package.json
 ├── LICENSE                # MIT
 └── THIRD_PARTY_NOTICES.md # 上游版权声明

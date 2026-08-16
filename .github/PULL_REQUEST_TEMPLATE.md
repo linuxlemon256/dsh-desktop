@@ -13,7 +13,7 @@ running `dsh web` server, cleanup on exit, etc. -->
 
 ## Checklist
 
-- [ ] Code follows the project's style (`main.js` stays self-contained)
+- [ ] Code follows the project's style (`src/main.js` stays self-contained)
 - [ ] No hardcoded machine-specific paths
 - [ ] Docs updated if behavior changed (READMEs, `docs/`, `CHANGELOG.md`)
 - [ ] Tested: server startup, attach-to-existing, cleanup on exit
