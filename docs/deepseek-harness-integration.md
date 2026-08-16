@@ -127,7 +127,28 @@ a user would run it manually.
 - Entry modes: `dsh --profile <name>`, `dsh web` (alias of `--profile web`),
   `dsh plugin`, `dsh --profile headless "<job>"`
 
-## 6. License
+## 6. Profile plugins (the "IDE" layer)
+
+`dsh-desktop` only wraps the harness — IDE-like UI features come from **profile
+plugins**, third-party packages installed into the `web` profile's own
+`node_modules` (under `$DSH_HOME/profiles/web`). The install flow is:
+
+```
+dsh plugin --profile web add <package>     # forwards to pnpm inside the profile
+```
+
+- Plugins ship `cordis.patch.yml` `insert` lines that mount their UI at
+  runtime; the web profile auto-loads them from its own `node_modules`.
+- Native dependencies may require pnpm build approval: on pnpm ≥ 11 the
+  profile's `pnpm-workspace.yaml` gets an `allowBuilds` section — set each
+  entry to `true` (e.g. `ssh2`, `cpu-features`, `cloudflared`), then
+  `pnpm rebuild` inside the profile directory.
+- Recommended family (verified working): `@linxin666/dsh-web-ui-all`
+  (Apache-2.0) — Explorer file tree + Preview panels, task board, git graph,
+  SSH terminal, skin center. Install it with:
+  `dsh plugin --profile web add @linxin666/dsh-web-ui-all`
+
+## 7. License
 
 This document is part of `dsh-desktop` (MIT). Upstream DeepSeek Harness code is
 MIT © 2026 DeepSeek — see [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md).

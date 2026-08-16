@@ -54,6 +54,26 @@ npm start
 | --- | --- | --- |
 | `DSH_PORT` | `3080` | `dsh web` 服务的 TCP 端口（设置后以 `dsh web --port` 传递） |
 
+## 扩展 UI（社区插件）
+
+`dsh web` profile 支持第三方插件，给 harness 界面加 IDE 级功能。最流行的全家桶是
+[`@linxin666/dsh-web-ui-all`](https://www.npmjs.com/package/@linxin666/dsh-web-ui-all)
+（Apache-2.0），一条命令装齐：
+
+- **资源管理器面板**：文件树、文件名搜索、git 变更（暂存/取消/丢弃）
+- **预览面板**：10+ 格式多标签预览（markdown、代码、pdf、office、图片等）
+- **任务看板**、**git 图**、**皮肤中心**、**实时统计** 等
+
+启用步骤（需要全局安装 [pnpm](https://pnpm.io/)）：
+
+```sh
+npm install -g pnpm
+dsh plugin --profile web add @linxin666/dsh-web-ui-all
+```
+
+装完重启应用，打开项目会话后，聊天区右侧会出现这些面板。插件为 Apache-2.0 许可，
+详见其[仓库](https://github.com/zhu1090093659/dsh-web-ui)。
+
 ## 构建安装包
 
 ```sh

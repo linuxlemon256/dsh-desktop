@@ -59,6 +59,28 @@ npm start
 | --- | --- | --- |
 | `DSH_PORT` | `3080` | TCP port of the `dsh web` server (passed to `dsh web --port` when set) |
 
+## Extending the UI (community plugins)
+
+The `dsh web` profile supports third-party plugins that add IDE-like features
+to the harness UI. The most popular family is
+[`@linxin666/dsh-web-ui-all`](https://www.npmjs.com/package/@linxin666/dsh-web-ui-all)
+(Apache-2.0) — a one-command install that adds:
+
+- **Explorer panel**: file tree, filename search, git changes (stage/unstage/discard)
+- **Preview panel**: multi-tab preview of 10+ formats (markdown, code, pdf, office, images…)
+- **Task board**, **git graph**, **skin center**, **live stats**, and more
+
+Enable it (requires [pnpm](https://pnpm.io/) installed globally):
+
+```sh
+npm install -g pnpm
+dsh plugin --profile web add @linxin666/dsh-web-ui-all
+```
+
+After installing, restart the app and open a project session — the panels
+appear to the right of the chat area. The plugin is Apache-2.0 licensed; see
+its [repository](https://github.com/zhu1090093659/dsh-web-ui) for details.
+
 ## Building installers
 
 ```sh
