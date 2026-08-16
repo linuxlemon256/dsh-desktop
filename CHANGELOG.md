@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-16
+
+### Added
+
+- Documentation for community UI plugins (file tree / preview / IDE features
+  via `@linxin666/dsh-web-ui-all`), including install steps and pnpm build
+  approval notes — see `README.md` and `docs/deepseek-harness-integration.md`.
+
+### Fixed
+
+- CI release pipeline: explicitly install the Electron binary (`npm` 11 blocks
+  postinstall scripts) and disable electron-builder's implicit publishing
+  (`--publish never`; it required `GH_TOKEN`).
+- Package metadata: author email specified (required by electron-builder 26).
+
 ## [1.0.0] - 2026-08-14
 
 ### Added
