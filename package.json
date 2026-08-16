@@ -1,6 +1,6 @@
 {
   "name": "dsh-desktop",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "A lightweight Electron desktop client for DeepSeek Harness (dsh): boots the `dsh web` server and opens its UI in a native window.",
   "main": "src/main.js",

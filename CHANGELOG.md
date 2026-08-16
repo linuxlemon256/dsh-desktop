@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-08-16
+
+### Changed
+
+- Standardized the project layout: the Electron main process moved from the
+  repository root into `src/main.js` (with all docs, packaging metadata and
+  internal paths updated accordingly).
+- README (EN/zh-CN) restructured the community-plugin section to recommend the
+  `dsh-better-sidebar` IDE workbench (file explorer + CodeMirror editor +
+  real terminal + Git panel) alongside `@linxin666/dsh-web-ui-all`, including
+  pnpm ≥ 11 build-approval troubleshooting steps.
+
 ## [1.1.0] - 2026-08-16
 
 ### Added
