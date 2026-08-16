@@ -56,29 +56,43 @@ npm start
 
 ## 扩展 UI（社区插件）
 
-`dsh web` profile 支持第三方插件，给 harness 界面加 IDE 级功能。最流行的全家桶是
-[`@linxin666/dsh-web-ui-all`](https://www.npmjs.com/package/@linxin666/dsh-web-ui-all)
-（Apache-2.0），一条命令装齐：
+`dsh web` profile 支持第三方插件，给 harness 界面加 IDE 级功能。两个已验证的选项：
+
+### 1. IDE 工作台：`dsh-better-sidebar`（推荐）
+
+在 harness 里直接获得完整工作台，无需打开其他 IDE：
+
+- **文件工作台**：懒加载目录树 + **CodeMirror 编辑器**
+- **真实终端**：xterm.js + node-pty
+- **Git 面板**：VSCode 式 diff（暂存/提交/还原）
+- 内嵌浏览器、后台任务页、可拆分分栏布局
+
+```sh
+dsh plugin --profile web add dsh-better-sidebar
+```
+
+详见 [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar)（MIT）。
+
+### 2. 文件树 + 预览面板：`@linxin666/dsh-web-ui-all`
+
+一条命令装齐（Apache-2.0）：
 
 - **资源管理器面板**：文件树、文件名搜索、git 变更（暂存/取消/丢弃）
 - **预览面板**：10+ 格式多标签预览（markdown、代码、pdf、office、图片等）
 - **任务看板**、**git 图**、**皮肤中心**、**实时统计** 等
-
-启用步骤（需要全局安装 [pnpm](https://pnpm.io/)）：
 
 ```sh
 npm install -g pnpm
 dsh plugin --profile web add @linxin666/dsh-web-ui-all
 ```
 
-> pnpm ≥ 11 默认拦截原生依赖构建（如 `ssh2`），命令可能报
+> pnpm ≥ 11 默认拦截原生依赖构建（如 `ssh2`、`node-pty`），命令可能报
 > `ERR_PNPM_IGNORED_BUILDS` 失败。此时打开
 > `~/.dsh/profiles/web/pnpm-workspace.yaml`，把 `allowBuilds` 各项设为
 > `true`，然后**重新执行一次 `dsh plugin ... add`**——必须成功退出（退出码 0）
 > 插件才会写进 `dsh.profile.bundles` 并生效。
 
-装完重启应用，打开**项目会话**（带工作目录的会话）后，聊天区右侧会出现这些面板。插件为 Apache-2.0 许可，
-详见其[仓库](https://github.com/zhu1090093659/dsh-web-ui)。
+装完重启应用，打开**项目会话**（带工作目录的会话）即可看到效果。用法详见各插件仓库。
 
 ## 构建安装包
 

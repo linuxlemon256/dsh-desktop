@@ -62,15 +62,30 @@ npm start
 ## Extending the UI (community plugins)
 
 The `dsh web` profile supports third-party plugins that add IDE-like features
-to the harness UI. The most popular family is
-[`@linxin666/dsh-web-ui-all`](https://www.npmjs.com/package/@linxin666/dsh-web-ui-all)
-(Apache-2.0) — a one-command install that adds:
+to the harness UI. Two verified options:
+
+### 1. IDE workbench: `dsh-better-sidebar` (recommended)
+
+A full workbench inside the harness — no separate IDE needed:
+
+- **File explorer** (lazy-loading directory tree) + **CodeMirror editor**
+- **Real terminal** (xterm.js + node-pty)
+- **Git panel** with VSCode-style diffs (stage / commit / revert)
+- Embedded browser, background task view, split-pane layout
+
+```sh
+dsh plugin --profile web add dsh-better-sidebar
+```
+
+See [dsh-better-sidebar](https://github.com/omdsh-dev/DSH-better-sidebar) (MIT).
+
+### 2. Explorer + Preview panels: `@linxin666/dsh-web-ui-all`
+
+A one-command install (Apache-2.0) that adds:
 
 - **Explorer panel**: file tree, filename search, git changes (stage/unstage/discard)
 - **Preview panel**: multi-tab preview of 10+ formats (markdown, code, pdf, office, images…)
 - **Task board**, **git graph**, **skin center**, **live stats**, and more
-
-Enable it (requires [pnpm](https://pnpm.io/) installed globally):
 
 ```sh
 npm install -g pnpm
@@ -78,15 +93,13 @@ dsh plugin --profile web add @linxin666/dsh-web-ui-all
 ```
 
 > On pnpm ≥ 11 the install may report `ERR_PNPM_IGNORED_BUILDS` (native deps
-> like `ssh2` are blocked by default). If the command fails, open
+> like `ssh2` / `node-pty` are blocked by default). If the command fails, open
 > `~/.dsh/profiles/web/pnpm-workspace.yaml`, set every `allowBuilds` entry to
 > `true`, then run the `dsh plugin ... add` command again — it must succeed
 > once (exit code 0) for the plugin to be registered in `dsh.profile.bundles`.
 
 After installing, restart the app and open a **project session** (a session
-with a working directory) — the Explorer/Preview panels appear to the right of
-the chat area. The plugin is Apache-2.0 licensed; see
-its [repository](https://github.com/zhu1090093659/dsh-web-ui) for details.
+with a working directory). See the plugin repositories for usage details.
 
 ## Building installers
 
