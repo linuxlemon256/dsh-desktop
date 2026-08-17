@@ -94,6 +94,49 @@ async function prepareNode() {
   console.log(`node runtime: ${path.join(nodeDir, NODE_BIN)}`);
 }
 
+function pruneTree(dir) {
+  const removedDirs = ['docs', 'test', 'tests', '__tests__', 'fixtures', 'example', 'examples', 'benchmark', 'benchmarks', '.github', 'coverage'];
+  let removed = 0;
+  const stack = [dir];
+  while (stack.length) {
+    const cur = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(cur, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const full = path.join(cur, entry.name);
+      if (entry.isDirectory()) {
+        if (removedDirs.includes(entry.name)) {
+          rmSync(full, { recursive: true, force: true });
+          removed++;
+        } else {
+          stack.push(full);
+        }
+      } else {
+        const name = entry.name.toLowerCase();
+        const isDoc =
+          (name.endsWith('.md') && !name.startsWith('license')) || name.endsWith('.markdown');
+        const isTypeOrMap =
+          name.endsWith('.d.ts') ||
+          name.endsWith('.d.mts') ||
+          name.endsWith('.d.cts') ||
+          name.endsWith('.map');
+        const isSource =
+          /\.(ts|mts|cts)$/.test(name) && !/\.d\.(ts|mts|cts)$/.test(name);
+        const isTest = /\.(test|spec)\.(js|mjs|cjs|ts|mts|cts)$/.test(name);
+        if (isDoc || isTypeOrMap || isSource || isTest) {
+          rmSync(full, { force: true });
+          removed++;
+        }
+      }
+    }
+  }
+  console.log(`pruned ${removed} entries from ${dir}`);
+}
+
 function prepareDsh() {
   const prefix = path.join(TMP, 'dsh');
   sh(`npm install --prefix "${prefix}" --omit=dev --no-audit --no-fund @deepseek-ai/dsh`);
@@ -102,6 +145,8 @@ function prepareDsh() {
   const target = path.join(RES, 'dsh');
   cpSync(pkg, target, { recursive: true });
   cpSync(path.join(prefix, 'node_modules'), path.join(target, 'node_modules'), { recursive: true });
+  pruneTree(path.join(target, 'node_modules'));
+  pruneTree(target);
   console.log('dsh CLI tree: resources/dsh');
 }
 
@@ -113,6 +158,8 @@ function preparePnpm() {
   const target = path.join(RES, 'pnpm');
   cpSync(pkg, target, { recursive: true });
   cpSync(path.join(prefix, 'node_modules'), path.join(target, 'node_modules'), { recursive: true });
+  pruneTree(path.join(target, 'node_modules'));
+  pruneTree(target);
   console.log('pnpm: resources/pnpm');
 }
 

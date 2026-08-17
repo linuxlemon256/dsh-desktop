@@ -158,9 +158,9 @@ dsh-desktop/
 
 - [ ] Auto-restart `dsh web` when it crashes while the window is open
 - [ ] Settings UI (port, auto-start)
-- [ ] Faster installer: prune the bundled runtime (strip `.d.ts` / `.map` /
-      docs / tests from `resources/dsh`) and evaluate NSIS `compression`:
-      `store` installs much faster at the cost of a larger download
+- [x] ~~Faster installer~~ — done in 2.0.x: bundled runtime is pruned (`.d.ts`
+      / `.map` / sources / docs / tests stripped), NSIS uses `useZip` (direct
+      extraction, no temp staging) — install time cut ~3.5x
 
 ## Contributing 🤝
 

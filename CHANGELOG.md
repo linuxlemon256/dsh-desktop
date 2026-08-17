@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Installer speed: the bundled runtime is pruned (`.d.ts` / `.map` / source /
+  docs / test files stripped — file count 35k → 13.8k) and the NSIS target
+  switched to `useZip` with `differentialPackage: false` (direct zip
+  extraction instead of temp-staging + copy). Measured on Windows: install
+  time ~3.5x faster (≈ 111s), installer ~229 MB.
+
 ## [2.0.0] - 2026-08-17
 
 ### Added

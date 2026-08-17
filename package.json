@@ -49,6 +49,7 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "compression": "normal",
     "extraResources": [
       {
         "from": "resources",
@@ -73,7 +74,9 @@
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "differentialPackage": false,
+      "useZip": true
     },
     "mac": {
       "target": "dmg",
