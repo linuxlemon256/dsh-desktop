@@ -7,9 +7,6 @@ resources/
 
 # Build output
 dist/
-build/*
-!build/icon.ico
-!build/icon.png
 *.exe
 *.dmg
 *.AppImage

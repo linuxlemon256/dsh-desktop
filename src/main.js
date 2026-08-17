@@ -73,14 +73,6 @@ if (process.env.DSH_PORT !== undefined && RAW_PORT !== PORT) {
   );
 }
 
-function windowIcon() {
-  const candidate =
-    process.platform === 'win32'
-      ? path.join(__dirname, '..', 'build', 'icon.ico')
-      : path.join(__dirname, '..', 'build', 'icon.png');
-  return fs.existsSync(candidate) ? candidate : undefined;
-}
-
 function log(...args) {
   console.log('[dsh-desktop]', ...args);
 }
@@ -416,7 +408,7 @@ if (!gotLock) {
       width: 1280,
       height: 850,
       title: 'DeepSeek Harness',
-      icon: windowIcon(),
+      icon: undefined,
       show: false,
       autoHideMenuBar: true,
       webPreferences: {
