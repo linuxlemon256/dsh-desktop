@@ -32,6 +32,10 @@ DeepSeek Harness 以 CLI 形式分发，界面要靠 `dsh web` 在浏览器里�
 
 ## 环境要求
 
+**安装包无需任何环境依赖**——Node.js 运行时、`dsh` CLI 和 `pnpm` 都已打进应用里。安装即用。
+
+仅从源码运行时需要：
+
 - [Node.js](https://nodejs.org/) >= 22.12
 - 全局安装 `dsh` CLI：
 
@@ -103,9 +107,10 @@ dsh plugin --profile web add @linxin666/dsh-web-ui-all
 ## 构建安装包
 
 ```sh
-npm run build:win     # Windows：NSIS 安装包 + 便携版 .exe
-npm run build:mac     # macOS：DMG（需要 macOS 机器）
-npm run build:linux   # Linux：AppImage（需要 Linux 机器）
+npm run prepare:resources  # 把 node + dsh + pnpm 打进 resources/（构建前必跑）
+npm run build:win          # Windows：NSIS 安装包
+npm run build:mac          # macOS：DMG（需要 macOS 机器）
+npm run build:linux        # Linux：AppImage（需要 Linux 机器）
 ```
 
 产物输出到 `dist/` 目录。发布官方多平台产物时，推送 `v*` 标签即可触发

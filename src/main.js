@@ -19,9 +19,51 @@ const PROFILE_PKG = path.join(PROFILE_DIR, 'package.json');
 const IDE_PLUGIN = 'dsh-better-sidebar';
 const SKIP_PLUGIN_INSTALL = process.env.DSH_SKIP_PLUGIN_INSTALL === '1';
 
+const DEBUG_LOG = path.join(os.tmpdir(), 'dsh-desktop-debug.log');
+function debugLog(msg) {
+  try {
+    fs.appendFileSync(DEBUG_LOG, `[${new Date().toISOString()}] ${msg}\n`);
+  } catch {}
+}
+process.on('uncaughtException', (err) => {
+  debugLog(`UNCAUGHT: ${err && err.stack ? err.stack : err}`);
+});
+process.on('unhandledRejection', (reason) => {
+  debugLog(`UNHANDLED REJECTION: ${reason && reason.stack ? reason.stack : reason}`);
+});
+
+const RESOURCES_DIR = app.isPackaged
+  ? process.resourcesPath
+  : path.join(__dirname, '..', 'resources');
+const BUNDLED_NODE = path.join(
+  RESOURCES_DIR,
+  'node',
+  process.platform === 'win32' ? 'node.exe' : 'node'
+);
+const BUNDLED_DSH = path.join(RESOURCES_DIR, 'dsh', 'lib', 'bin.js');
+const BUNDLED_PNPM = path.join(RESOURCES_DIR, 'pnpm', 'bin', 'pnpm.cjs');
+const BUNDLED_BIN = path.join(RESOURCES_DIR, 'bin');
+
+function hasBundledDsh() {
+  return fs.existsSync(BUNDLED_NODE) && fs.existsSync(BUNDLED_DSH);
+}
+
+function hasBundledPnpm() {
+  return fs.existsSync(BUNDLED_NODE) && fs.existsSync(BUNDLED_PNPM);
+}
+
+function runtimeEnv() {
+  const env = { ...process.env, NODE_OPTIONS: '--use-system-ca' };
+  if (fs.existsSync(BUNDLED_BIN)) {
+    env.PATH = BUNDLED_BIN + path.delimiter + (env.PATH || '');
+  }
+  return env;
+}
+
 let dshProc = null;
 let mainWindow = null;
 let shuttingDown = false;
+let restarting = false;
 let startupAbort = null;
 let startupCrashCode = null;
 
@@ -104,6 +146,9 @@ function waitForStartup(timeoutMs) {
 }
 
 function resolveDshPath() {
+  if (hasBundledDsh()) {
+    return Promise.resolve(`bundled: ${BUNDLED_NODE} ${BUNDLED_DSH}`);
+  }
   const lookup = process.platform === 'win32' ? 'where' : 'which';
   return new Promise((resolve) => {
     execFile(lookup, ['dsh'], (err, stdout) => {
@@ -119,27 +164,40 @@ function startDsh() {
       if (!dshPath) {
         dialog.showErrorBox(
           'dsh not found',
-          'The `dsh` CLI was not found on your PATH.\n\n' +
-            'Install it globally and try again:\n\n' +
+          'Neither a bundled runtime nor a `dsh` CLI on your PATH was found.\n\n' +
+            'Reinstall the app, or install the CLI globally:\n\n' +
             '    npm install -g @deepseek-ai/dsh'
         );
         resolve(false);
         return;
       }
       log(`starting \`${dshCommandLine()}\` (${dshPath})`);
-      if (process.platform === 'win32') {
+      if (hasBundledDsh()) {
+        dshProc = execFile(BUNDLED_NODE, [BUNDLED_DSH, ...dshArgs()], {
+          windowsHide: true,
+          env: runtimeEnv(),
+        });
+        dshProc.on('error', (err) => debugLog(`dsh spawn error: ${err.message} (${err.code})`));
+        dshProc = execFile(BUNDLED_NODE, [BUNDLED_DSH, ...dshArgs()], {
+          windowsHide: true,
+          env: runtimeEnv(),
+        });
+      } else if (process.platform === 'win32') {
         const comspec = process.env.ComSpec || 'cmd.exe';
         dshProc = execFile(comspec, ['/d', '/s', '/c', dshCommandLine()], {
           windowsHide: true,
+          env: runtimeEnv(),
         });
       } else {
-        dshProc = spawn('dsh', dshArgs(), { detached: true });
+        dshProc = spawn('dsh', dshArgs(), { detached: true, env: runtimeEnv() });
       }
-      dshProc.stdout.on('data', (chunk) => log(`[dsh] ${chunk}`.trimEnd()));
-      dshProc.stderr.on('data', (chunk) => errorLog(`[dsh] ${chunk}`.trimEnd()));
-      dshProc.on('exit', (code, signal) => {
-        dshProc = null;
-        if (shuttingDown) return;
+      const proc = dshProc;
+      proc.stdout.on('data', (chunk) => log(`[dsh] ${chunk}`.trimEnd()));
+      proc.stderr.on('data', (chunk) => errorLog(`[dsh] ${chunk}`.trimEnd()));
+      proc.on('exit', (code, signal) => {
+        const intentional = proc.intentionalKill === true;
+        if (proc === dshProc) dshProc = null;
+        if (shuttingDown || restarting || intentional) return;
         errorLog(`\`dsh web\` exited unexpectedly (code=${code}, signal=${signal})`);
         if (startupAbort) {
           startupCrashCode = code;
@@ -157,6 +215,15 @@ function startDsh() {
   });
 }
 
+async function waitForPortClosed(timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (!(await isServerUp(300))) return true;
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  return !(await isServerUp(300));
+}
+
 async function ensureDsh() {
   if (await isServerUp(SHORT_TIMEOUT_MS)) {
     log(`existing \`dsh web\` server detected at ${serverUrl()}`);
@@ -164,22 +231,31 @@ async function ensureDsh() {
   }
 
   const profileExists = fs.existsSync(PROFILE_PKG);
-  let ideInstalled = false;
-  if (!SKIP_PLUGIN_INSTALL && profileExists && !checkIdePlugin().installed) {
-    ideInstalled = await installIdePlugin();
+  if (!SKIP_PLUGIN_INSTALL) {
+    if (!profileExists) {
+      log('initializing web profile (no server yet)...');
+      for (let i = 0; i < 3; i++) {
+        const res = await runCommand('dsh', ['--profile', 'web', '--dump-config']);
+        if (res.code === 0) break;
+        errorLog(`profile init attempt ${i + 1}/3 failed: ${(res.stderr || '').trim()}`);
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+    if (!checkIdePlugin().installed) {
+      await installIdePlugin();
+    }
   }
 
-  if (!(await startDsh())) return false;
-  let up = await waitForStartup(STARTUP_TIMEOUT_MS);
-  startupAbort = null;
-
-  if (up && !SKIP_PLUGIN_INSTALL && !ideInstalled && !checkIdePlugin().installed) {
-    log('first run — installing IDE workbench, then restarting the server...');
-    if (await installIdePlugin()) {
-      killDsh();
-      if (!(await startDsh())) return false;
-      up = await waitForStartup(STARTUP_TIMEOUT_MS);
-      startupAbort = null;
+  let up = false;
+  for (let attempt = 1; attempt <= 3 && !up; attempt++) {
+    if (attempt > 1) await waitForPortClosed(10000);
+    if (!(await startDsh())) return false;
+    up = await waitForStartup(STARTUP_TIMEOUT_MS);
+    startupAbort = null;
+    if (!up && startupCrashCode !== null && attempt < 3) {
+      log(
+        `\`dsh web\` exited during startup (code ${startupCrashCode}) — retrying (${attempt}/3)...`
+      );
     }
   }
 
@@ -200,6 +276,7 @@ async function ensureDsh() {
 function killDsh() {
   if (!dshProc) return;
   const proc = dshProc;
+  proc.intentionalKill = true;
   dshProc = null;
   if (process.platform === 'win32') {
     execFile('taskkill', ['/pid', String(proc.pid), '/T', '/F'], () => {});
@@ -214,24 +291,35 @@ function killDsh() {
 
 function runCommand(command, args, opts = {}) {
   return new Promise((resolve) => {
-    const env = { ...process.env, NODE_OPTIONS: '--use-system-ca' };
+    const env = runtimeEnv();
     const finish = (err, stdout, stderr) =>
       resolve({ code: err ? (err.code !== undefined ? err.code : 1) : 0, stdout, stderr });
-    if (process.platform === 'win32') {
+    const execOpts = {
+      windowsHide: true,
+      cwd: opts.cwd,
+      env,
+      maxBuffer: opts.maxBuffer || 16 * 1024 * 1024,
+    };
+    if (command === 'dsh' && hasBundledDsh()) {
+      execFile(BUNDLED_NODE, [BUNDLED_DSH, ...args], execOpts, finish);
+    } else if (command === 'pnpm' && hasBundledPnpm()) {
+      execFile(BUNDLED_NODE, [BUNDLED_PNPM, ...args], execOpts, finish);
+    } else if (process.platform === 'win32') {
       const comspec = process.env.ComSpec || 'cmd.exe';
       execFile(
         comspec,
         ['/d', '/s', '/c', [command, ...args].join(' ')],
-        { windowsHide: true, cwd: opts.cwd, env },
+        execOpts,
         finish
       );
     } else {
-      execFile(command, args, { cwd: opts.cwd, env }, finish);
+      execFile(command, args, execOpts, finish);
     }
   });
 }
 
 function resolvePnpm() {
+  if (hasBundledPnpm()) return Promise.resolve(`bundled: ${BUNDLED_NODE} ${BUNDLED_PNPM}`);
   const lookup = process.platform === 'win32' ? 'where' : 'which';
   return new Promise((resolve) => {
     execFile(lookup, ['pnpm'], (err, stdout) => {
@@ -251,6 +339,7 @@ function checkIdePlugin() {
 }
 
 async function ensurePnpm() {
+  if (hasBundledPnpm()) return true;
   if (await resolvePnpm()) return true;
   log('pnpm not found — installing it globally (required by the dsh plugin manager)...');
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -263,30 +352,46 @@ async function ensurePnpm() {
   return true;
 }
 
+async function approveNodePtyBuild() {
+  const wsFile = path.join(PROFILE_DIR, 'pnpm-workspace.yaml');
+  let content = null;
+  try {
+    content = fs.readFileSync(wsFile, 'utf8');
+  } catch {
+    /* file missing — will be created */
+  }
+  if (content && content.includes('node-pty: true')) return true;
+  const entry = '  node-pty: true';
+  let updated;
+  if (content && content.includes('allowBuilds:')) {
+    updated = content.replace('allowBuilds:', `allowBuilds:\n${entry}`);
+  } else {
+    updated = `${content ?? ''}${content ? '\n' : ''}allowBuilds:\n${entry}\n`;
+  }
+  try {
+    fs.writeFileSync(wsFile, updated);
+    return true;
+  } catch (err) {
+    errorLog(`failed to update pnpm-workspace.yaml: ${err.message}`);
+    return false;
+  }
+}
+
 async function installIdePlugin() {
   log(`IDE plugin \`${IDE_PLUGIN}\` not found in profile — installing...`);
   if (!(await ensurePnpm())) return false;
+  await approveNodePtyBuild();
 
   const addArgs = ['plugin', '--profile', 'web', 'add', IDE_PLUGIN];
-  const first = await runCommand('dsh', addArgs);
-  if (first.code !== 0) {
-    errorLog(`dsh plugin add failed on first attempt: ${(first.stderr || '').trim()}`);
-  }
-
-  const approve = await runCommand('pnpm', ['approve-builds', '--all'], { cwd: PROFILE_DIR });
-  if (approve.code !== 0) {
-    errorLog(`pnpm approve-builds failed: ${(approve.stderr || '').trim()}`);
-  }
-
-  const second = await runCommand('dsh', addArgs);
-  if (second.code !== 0) {
-    errorLog(`failed to register IDE plugin: ${(second.stderr || '').trim()}`);
-    return false;
+  let res = await runCommand('dsh', addArgs);
+  if (res.code !== 0) {
+    errorLog(`dsh plugin add failed on first attempt: ${(res.stderr || '').trim()}`);
+    res = await runCommand('dsh', addArgs);
   }
 
   const status = checkIdePlugin();
   if (status.installed) log(`IDE workbench installed (${IDE_PLUGIN})`);
-  else errorLog('IDE plugin installed but not registered in profile bundles');
+  else errorLog(`failed to register IDE plugin: ${(res.stderr || '').trim()}`);
   return status.installed;
 }
 

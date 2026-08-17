@@ -37,6 +37,11 @@ the missing piece.
 
 ## Requirements
 
+**The packaged installers need nothing** — the Node.js runtime, the `dsh` CLI
+and `pnpm` are bundled inside the app. Install, double-click, done.
+
+Only when running from source:
+
 - [Node.js](https://nodejs.org/) >= 22.12
 - The `dsh` CLI installed globally:
 
@@ -110,9 +115,10 @@ with a working directory). See the plugin repositories for usage details.
 ## Building installers
 
 ```sh
-npm run build:win     # NSIS installer + portable .exe (Windows)
-npm run build:mac     # DMG (macOS — requires a macOS machine)
-npm run build:linux   # AppImage (Linux — requires a Linux machine)
+npm run prepare:resources  # bundle node + dsh + pnpm into resources/ (needed before building)
+npm run build:win          # NSIS installer (Windows)
+npm run build:mac          # DMG (macOS — requires a macOS machine)
+npm run build:linux        # AppImage (Linux — requires a Linux machine)
 ```
 
 Output goes to `dist/`. For official multi-platform release assets, push a

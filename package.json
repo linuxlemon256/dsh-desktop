@@ -31,6 +31,7 @@
   },
   "scripts": {
     "start": "electron .",
+    "prepare:resources": "node scripts/prepare-resources.mjs",
     "pack": "electron-builder --dir --publish never",
     "build": "electron-builder --win --publish never",
     "build:win": "electron-builder --win --publish never",
@@ -48,16 +49,17 @@
       "output": "dist",
       "buildResources": "build"
     },
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": ".",
+        "filter": ["node/**/*", "dsh/**/*", "pnpm/**/*", "bin/**/*"]
+      }
+    ],
     "win": {
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
           "arch": [
             "x64"
           ]

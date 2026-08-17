@@ -40,6 +40,9 @@ jobs:
       - name: Install electron binary
         run: node node_modules/electron/install.js
 
+      - name: Prepare bundled runtime
+        run: node scripts/prepare-resources.mjs
+
       - name: Build installer
         run: npm run ${{ matrix.script }}
 

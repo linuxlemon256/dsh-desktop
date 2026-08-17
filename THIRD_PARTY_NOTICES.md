@@ -42,5 +42,8 @@ SOFTWARE.
 | --- | --- | --- |
 | [Electron](https://www.electronjs.org/) | MIT | Desktop runtime (Chromium + Node.js) |
 | [electron-builder](https://www.electron.build/) | MIT | Packaging installers for Windows / macOS / Linux |
+| [Node.js](https://nodejs.org/) | MIT | Bundled portable runtime that runs the bundled `dsh` CLI (zero-dependency installers) |
+| [pnpm](https://pnpm.io/) | MIT | Bundled package manager used by the `dsh` plugin auto-installer |
+| `@deepseek-ai/dsh` | MIT | Bundled DeepSeek Harness CLI (see section above) |
 
 See `package.json` for exact versions.

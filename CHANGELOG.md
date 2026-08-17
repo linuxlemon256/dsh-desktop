@@ -9,10 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Zero-dependency installers**: the Node.js runtime, the `@deepseek-ai/dsh`
+  CLI and `pnpm` are bundled into the app (`resources/`, prepared by
+  `scripts/prepare-resources.mjs` and shipped via `extraResources`). Users no
+  longer need Node.js, `dsh` or `pnpm` installed — the app spawns its bundled
+  runtime first and falls back to `PATH` when bundling is absent.
 - Auto-install of the `dsh-better-sidebar` IDE workbench on first launch
-  (when the `web` profile lacks it): ensures `pnpm`, handles the pnpm 11
-  build-approval gate, registers the plugin, and restarts the server.
+  (when the `web` profile lacks it): initializes the profile without starting
+  a server (`--dump-config`), ensures the bundled `pnpm`, handles the pnpm 11
+  build-approval gate, registers the plugin, then starts the server once.
   Disable with `DSH_SKIP_PLUGIN_INSTALL=1`.
+
+### Fixed
+
+- Startup robustness: the app retries `dsh web` up to 3 times when it crashes
+  during startup, waits for the port to be released before respawning, and
+  treats killed/restarted processes as intentional (no false error dialogs).
+  Windows NSIS portable target removed — its self-extractor dropped files from
+  the large bundled resource tree; the NSIS installer is unaffected.
 
 ## [1.1.1] - 2026-08-16
 
