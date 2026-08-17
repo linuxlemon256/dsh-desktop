@@ -152,6 +152,7 @@ dsh-desktop/
 
 - [ ] 窗口打开期间 `dsh web` 崩溃时自动重启
 - [ ] 设置界面（端口、开机自启）
+- [ ] 安装提速：裁剪内置运行时（去掉 `resources/dsh` 里的 `.d.ts`/`.map`/文档/测试），并评估 NSIS `compression`：`store` 模式安装快很多、代价是下载包更大
 
 ## 参与贡献 🤝
 

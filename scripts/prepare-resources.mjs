@@ -8,6 +8,9 @@
 //   bin/   — launcher shims that resolve the bundled runtime via relative paths
 //
 // Run from any platform before `electron-builder` (locally or in CI).
+// TODO(next release): prune the bundled dsh/pnpm trees before copying —
+// strip *.d.ts, *.map, README/docs and test fixtures to cut the file count
+// (~35k) and speed up installation. Revisit NSIS `compression: "store"` too.
 import { execSync } from 'node:child_process';
 import {
   chmodSync,
