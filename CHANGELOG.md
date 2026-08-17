@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-08-17
 
 ### Added
 
@@ -19,13 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a server (`--dump-config`), ensures the bundled `pnpm`, handles the pnpm 11
   build-approval gate, registers the plugin, then starts the server once.
   Disable with `DSH_SKIP_PLUGIN_INSTALL=1`.
+- CI release pipeline now bundles the runtime on all three platforms before
+  building.
 
 ### Fixed
 
 - Startup robustness: the app retries `dsh web` up to 3 times when it crashes
   during startup, waits for the port to be released before respawning, and
   treats killed/restarted processes as intentional (no false error dialogs).
-  Windows NSIS portable target removed — its self-extractor dropped files from
+- Windows NSIS portable target removed — its self-extractor dropped files from
   the large bundled resource tree; the NSIS installer is unaffected.
 
 ## [1.1.1] - 2026-08-16
