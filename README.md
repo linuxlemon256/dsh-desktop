@@ -36,6 +36,7 @@ missing piece you've been looking for.
 - **Clean lifecycle** — the server's process tree is terminated on exit. No zombies, no orphans, no "what's eating my RAM"
 - **Single-instance guard** — launching twice just focuses the existing window. No duplicate servers fighting over a port
 - **Configurable port** — set `DSH_PORT` (default `3080`) and it does what you say
+- **Port settings UI** — change the server port and scan for occupied ports right from the dsh settings page (the "Web UI Plugins" section); on startup, if the port is taken by another program, the app offers a free one
 - **Cross-platform** — Windows / macOS / Linux, take your pick
 
 ## Requirements 📦
@@ -156,8 +157,10 @@ dsh-desktop/
 
 ## Roadmap 🗺️
 
-- [ ] Auto-restart `dsh web` when it crashes while the window is open
-- [ ] Settings UI (port, auto-start)
+- [x] ~~Auto-restart `dsh web` when it crashes while the window is open~~ — done in 2.0.3
+- [x] ~~Settings UI (port)~~ — done in 2.0.3: the dsh settings page's "Web UI
+      Plugins" section hosts a port card (change port, scan occupancy)
+- [ ] Settings UI (auto-start)
 - [x] ~~Faster installer~~ — done in 2.0.x: bundled runtime is pruned (`.d.ts`
       / `.map` / sources / docs / tests stripped), NSIS uses `useZip` (direct
       extraction, no temp staging) — install time cut ~3.5x

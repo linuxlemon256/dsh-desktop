@@ -12,12 +12,14 @@
 // strip *.d.ts, *.map, README/docs and test fixtures to cut the file count
 // (~35k) and speed up installation. Revisit NSIS `compression: "store"` too.
 import { execSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   chmodSync,
   cpSync,
   createWriteStream,
   existsSync,
   mkdirSync,
+  readFileSync,
   readdirSync,
   rmSync,
   writeFileSync,
@@ -52,6 +54,39 @@ async function download(url, dest) {
   await pipeline(res.body, createWriteStream(dest));
 }
 
+function sha256File(file) {
+  return createHash('sha256').update(readFileSync(file)).digest('hex');
+}
+
+async function verifyNodeArchive(url, file) {
+  // nodejs.org publishes SHASUMS256.txt next to each release; fail the build
+  // if the downloaded archive does not match, guarding against a tampered or
+  // truncated download.
+  const sumsUrl = `https://nodejs.org/dist/${NODE_VERSION}/SHASUMS256.txt`;
+  let sums = null;
+  try {
+    const res = await fetch(sumsUrl);
+    if (res.ok) sums = await res.text();
+  } catch {
+    sums = null;
+  }
+  if (!sums) {
+    console.warn(`WARN: could not fetch ${sumsUrl} — skipping archive verification`);
+    return;
+  }
+  const name = path.basename(url);
+  const line = sums.split(/\r?\n/).find((l) => l.includes(name));
+  if (!line) {
+    throw new Error(`no checksum found for ${name} in SHASUMS256.txt`);
+  }
+  const expected = line.split(/\s+/)[0].toLowerCase();
+  const actual = sha256File(file);
+  if (actual !== expected) {
+    throw new Error(`SHA256 mismatch for ${name}\n  expected ${expected}\n  actual   ${actual}`);
+  }
+  console.log(`checksum OK: ${name}`);
+}
+
 function findNodeBinary(dir) {
   const targets = isWin ? ['node.exe'] : ['node'];
   const stack = [dir];
@@ -82,6 +117,7 @@ async function prepareNode() {
   const url = `https://nodejs.org/dist/${NODE_VERSION}/node-${NODE_VERSION}-${osName}-${arch}.${ext}`;
   const archive = path.join(TMP, `node.${ext}`);
   await download(url, archive);
+  await verifyNodeArchive(url, archive);
   const extract = path.join(TMP, 'node-extract');
   mkdirSync(extract, { recursive: true });
   sh(`tar -xf "${archive}" -C "${extract}"`);

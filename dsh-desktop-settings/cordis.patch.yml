@@ -1,0 +1,5 @@
+# dsh-desktop-settings bundle patch: inserts the browser-half card into the
+# web profile roster, next to the other Web UI Plugins group cards.
+- insert:
+    - id: dsh-desktop-settings
+      name: 'dsh-desktop-settings'

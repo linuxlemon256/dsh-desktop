@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-08-18
+
+### Added
+
+- **Port settings UI** integrated into the dsh settings page (the "Web UI
+  Plugins" section, via a new `dsh-desktop-settings` plugin card): change the
+  server port, scan a range for occupied ports (with process name / PID /
+  status), and apply-and-restart the service. The card drives the Electron
+  host through an injected `window.__dshDesktop__` bridge. On startup, if the
+  configured port is taken by another program, the app offers a free port
+  (saved to config); a `dsh web` server on the same port is reused (attach).
+  Port priority: `DSH_PORT` env > config file > default `3080`.
+
+### Fixed
+
+- **Duplicate `dsh web` spawn on startup**: the bundled-runtime branch started
+  the server twice (one orphaned process racing for the port). Now a single
+  spawn.
+- **Startup crash retry actually works**: the retry window previously missed
+  crashes before the health probe started, and a timed-out-but-alive process
+  leaked into the next attempt (and its exit could kill the app mid-retry).
+  Retries now cover the full startup window and kill the stale process first.
+- **Auto-restart `dsh web` when it crashes while the window is open** (was a
+  roadmap TODO): up to 5 restarts with backoff, reloading the page on success.
+- **Plugin check now verifies the on-disk install**, not just the bundle name
+  (a broken/link-missing plugin is reinstalled).
+- User `NODE_OPTIONS` is preserved (the app appends `--use-system-ca` instead
+  of overwriting).
+- Config files with a UTF-8 BOM are parsed correctly.
+
+### Changed
+
+- The standalone Electron settings window was replaced by the in-app card in
+  the dsh settings page (per project decision).
+
 ## [2.0.2] - 2026-08-18
 
 ### Changed

@@ -40,6 +40,12 @@ jobs:
       - name: Install electron binary
         run: node node_modules/electron/install.js
 
+      - name: Syntax check
+        shell: bash
+        run: |
+          node --check src/main.js
+          node --check scripts/prepare-resources.mjs
+
       - name: Prepare bundled runtime
         run: node scripts/prepare-resources.mjs
 
